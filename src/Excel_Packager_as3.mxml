@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication 
+	width="800" height="600"
+	creationComplete="onCreateComplete(event)"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx">
+	<!--带窗体的打包程序。这里主要是选择目录，拖拽文件之类的 -->
+	<fx:Script>
+		<![CDATA[
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var fromFile:File;
+			private var toFile:File;
+			
+			protected function onCreateComplete(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, onDragIn);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, onDrop);
+			}
+			
+			protected function onDragIn(event:NativeDragEvent):void
+			{
+				NativeDragManager.acceptDragDrop(this);
+			}
+			
+			protected function onDrop(event:NativeDragEvent):void
+			{
+				NativeDragManager.dropAction = NativeDragActions.COPY;
+				var dropFile:File = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT)[0];
+				if (!dropFile)
+				{
+					Alert.show("你搞错了？");
+				}
+				fromFile = dropFile.isDirectory ? dropFile : dropFile.parent;
+				selectToFile();
+			}
+			
+			
+			/**
+			 * 选择源目录
+			 */
+			private function selectFromFile():void
+			{
+				if (!fromFile)
+				{
+					fromFile = new File;
+					fromFile.addEventListener(Event.SELECT, selectToFile);
+				}
+				fromFile.browseForDirectory('选择数据文件的目录');
+			}
+			
+			/**
+			 * 选择目标文件
+			 */
+			private function selectToFile(... rest):void
+			{
+				if (!toFile)
+				{
+					toFile = new File;
+					toFile.addEventListener(Event.SELECT, packageData);
+				}
+				toFile.browseForSave("保存数据文件");
+			}
+			
+			private function packageData(... rest):void
+			{
+				try
+				{
+					new Packager().packageData(fromFile, toFile);
+					var s:String = toFile.url.slice(0, toFile.url.lastIndexOf('/') + 1);
+					msgTxt.textFlow = TextConverter.importToFlow(
+						'转换完成到：' + toFile.nativePath + '，<a href="' + s
+						+ '">点此打开所在目录</a>', TextConverter.TEXT_FIELD_HTML_FORMAT);
+				}
+				catch (error:Error)
+				{
+					trace("Failed:", error.message)
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup 
+		y="100" width="100%"
+		horizontalAlign="center"
+		gap="50">
+		<s:RichEditableText id="msgTxt"
+							width="300"
+							fontFamily="宋体"
+							fontSize="12"
+							text="点击打开按钮选择存放数据配置的文件夹&#13;或者拖进配置文件夹或里面的任意文件，然后保存文件。"
+							editable="false"/>
+		<s:Label width="300"
+				 fontFamily="宋体" color="#666666"
+				 fontSize="12"
+				 text="策划需要将数据放在第一个sheet中，并且第一行为标题备注，第二行为英文变量名，真正打包数据是从第三行开始，前两行会被忽略。"/>
+		<s:Button 
+			width="300" height="300"
+			fontFamily="宋体"
+			fontSize="30"
+			label="打开"
+			click="selectFromFile()"/>
+	</s:VGroup>
+</s:WindowedApplication>
