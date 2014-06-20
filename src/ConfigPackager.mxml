@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication 
+	width="600" height="480"
+	creationComplete="onCreateComplete(event)"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx" invoke="onInvoke(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import utils.Packager;
+			
+			private var fromFile:File;
+			private var toFile:File;
+			
+			/**
+			 * 不带窗体的打包程序，适合用cmd，或ant调用，需要带两个参数
+			 * 0：要打包的数据文件夹的路径
+			 * 1：输出保存最终的路径
+			 * 
+			 * 带窗体的打包程序。这里主要是选择目录，拖拽文件之类的
+			 * */
+			protected function onCreateComplete(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, onDragIn);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, onDrop);
+			}
+			
+			protected function onDragIn(event:NativeDragEvent):void
+			{
+				NativeDragManager.acceptDragDrop(this);
+			}
+			
+			protected function onDrop(event:NativeDragEvent):void
+			{
+				NativeDragManager.dropAction = NativeDragActions.COPY;
+				var dropFile:File = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT)[0];
+				if (!dropFile)
+				{
+					Alert.show("你搞错了？");
+				}
+				fromFile = dropFile.isDirectory ? dropFile : dropFile.parent;
+				selectToFile();
+			}
+			
+			/**
+			 * 选择源目录
+			 */
+			private function selectFromFile():void
+			{
+				if (!fromFile)
+				{
+					fromFile = new File;
+					fromFile.addEventListener(Event.SELECT, selectToFile);
+				}
+				fromFile.browseForDirectory('选择存放数据文件的目录');
+			}
+			
+			/**
+			 * 选择目标文件
+			 */
+			private function selectToFile(... rest):void
+			{
+				if (!toFile)
+				{
+					toFile = new File;
+					toFile.addEventListener(Event.SELECT, packageData);
+				}
+				toFile.browseForSave("保存生成的数据文件到");
+			}
+			
+			private function packageData(... rest):void
+			{
+				Packager.write(fromFile, toFile);
+				var url:String = toFile.url.slice(0, toFile.url.lastIndexOf('/') + 1);
+				msgTxt.textFlow = TextConverter.importToFlow(
+					'转换完成到：' + toFile.nativePath + '，<a href="' + url
+					+ '">点此打开所在目录</a>', TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
+			/**
+			 * command line
+			 * */
+			protected function onInvoke(event:InvokeEvent):void
+			{
+				if (event.arguments.length >= 2)
+				{
+					visible = false;
+					Packager.write(new File(event.arguments[0]), new File(event.arguments[1]));
+					this.exit();
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup 
+		y="100" width="100%"
+		horizontalAlign="center"
+		gap="50">
+		<s:RichEditableText id="msgTxt"
+							width="300"
+							fontFamily="宋体"
+							fontSize="15"
+							text="拖进配置文件夹或里面的任意文件，或者点击按钮选择存放数据配置的文件夹&#13;然后保存文件。"
+							editable="false"/>
+		<s:Label width="300"
+				 fontFamily="宋体" color="#666666"
+				 fontSize="15"
+				 text="策划需要将数据放在第一个sheet中，并且第一行为标题备注，第二行为英文变量名，真正打包数据是从第三行开始，前两行会被忽略。"/>
+		<s:Button 
+			width="300" height="60"
+			fontFamily="宋体"
+			fontSize="30"
+			label="选择数据目录"
+			click="selectFromFile()"/>
+	</s:VGroup>
+</s:WindowedApplication>
