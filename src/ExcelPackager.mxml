@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication 
-	width="600" height="480"
+	width="600" height="520"
 	creationComplete="onCreateComplete(event)"
 	xmlns:fx="http://ns.adobe.com/mxml/2009"
 	xmlns:s="library://ns.adobe.com/flex/spark"
@@ -14,6 +14,11 @@
 			import flashx.textLayout.conversion.TextConverter;
 			
 			import utils.Packager;
+			import utils.formatString;
+			/**
+			 * 上次的config路径
+			 * */
+			private var lastSettings:Array;
 			
 			private var fromFile:File;
 			private var toFile:File;
@@ -27,6 +32,21 @@
 			 * */
 			protected function onCreateComplete(event:FlexEvent):void
 			{
+				var storage:File = File.applicationStorageDirectory.resolvePath("storage.txt");
+				if(storage.exists)
+				{
+					var fileBytes:ByteArray = new ByteArray();
+					var stream:FileStream = new FileStream();
+					stream.open(storage, FileMode.READ);
+					stream.readBytes(fileBytes);
+					stream.close();
+					var text:String = fileBytes.readUTFBytes(fileBytes.bytesAvailable);
+					lastSettings = text.split("\r\n");
+					packageWithLastSettings.visible = true;
+					packageWithLastSettings.toolTip = "使用上次的路径打包\r\n" + lastSettings.join("\r\n");
+				}
+				
+				
 				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, onDragIn);
 				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, onDrop);
 			}
@@ -81,6 +101,16 @@
 				msgTxt.textFlow = TextConverter.importToFlow(
 					'转换完成到：' + toFile.nativePath + '，<a href="' + url
 					+ '">点此打开所在目录</a>', TextConverter.TEXT_FIELD_HTML_FORMAT);
+				
+				lastSettings = [fromFile.nativePath, toFile.nativePath];
+				var storage:File = File.applicationStorageDirectory.resolvePath("storage.txt");
+				var stream2:FileStream = new FileStream();
+				stream2.open(storage, FileMode.WRITE);
+				var text:String = formatString("{0}\r\n{1}", lastSettings[0], lastSettings[1]);
+				stream2.writeUTFBytes(text);
+				stream2.close();
+				packageWithLastSettings.visible = true;
+				packageWithLastSettings.toolTip = "使用上次的路径打包\r\n" + lastSettings.join("\r\n");
 			}
 			
 			/**
@@ -95,6 +125,18 @@
 					this.exit();
 				}
 			}
+			
+			private function packageDataHandler():void
+			{
+				fromFile = new File(lastSettings[0]);
+				toFile = new File(lastSettings[1]);
+				Packager.write(fromFile, toFile);
+				var url:String = toFile.url.slice(0, toFile.url.lastIndexOf('/') + 1);
+				msgTxt.textFlow = TextConverter.importToFlow(
+					'转换完成到：' + toFile.nativePath + '，<a href="' + url
+					+ '">点此打开所在目录</a>', TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
 		]]>
 	</fx:Script>
 	<s:VGroup 
@@ -110,12 +152,18 @@
 		<s:Label width="300"
 				 fontFamily="宋体" color="#666666"
 				 fontSize="15"
-				 text="策划需要将数据放在第一个sheet中，并且第一行为标题备注，第二行为英文变量名，真正打包数据是从第三行开始，前两行会被忽略。"/>
+				 text="策划需要将数据放在第一个sheet中，并且第1行为标题备注，第2行为数据类型，第3行为变量名（只能包含字母和下划线），真正打包数据是从第4行开始，前3行会被忽略。"/>
 		<s:Button 
-			width="300" height="60"
+			width="300" height="50" color="#119977"
 			fontFamily="宋体"
 			fontSize="30"
-			label="选择数据目录"
+			label="选择数据目录打包"
 			click="selectFromFile()"/>
+		<s:Button id="packageWithLastSettings" visible="false" color="#ff6622"
+			width="300" height="50"
+			fontFamily="宋体"
+			fontSize="30"
+			label="使用上次的路径打包" toolTip="使用上次的路径打包"
+			click="packageDataHandler()"/>
 	</s:VGroup>
 </s:WindowedApplication>

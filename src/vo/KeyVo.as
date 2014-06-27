@@ -9,7 +9,7 @@ package vo
 		public var name:String;
 		public var isArray:Boolean;
 		public var secondType:String;
-		
+		public var desc:String;
 		public function KeyVo()
 		{
 		}

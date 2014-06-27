@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="ConfigPackager.mxml" projectUUID="5ced0637-35ee-42f4-ad67-0ca79a2d977a" version="11">
+<actionScriptProperties analytics="false" mainApplicationPath="ExcelPackager.mxml" projectUUID="2f21e149-5074-4142-b762-c1f683aa5abb" version="11">
   <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" useFlashSDK="false" verifyDigests="true" warn="true">
     <compilerSourcePath/>
     <libraryPath defaultLinkType="0">
@@ -14,7 +14,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="ConfigPackager.mxml">
+    <application path="ExcelPackager.mxml">
       <airExcludes/>
     </application>
   </applications>

@@ -57,6 +57,7 @@ package utils
 			
 			var columnKeys:Dictionary = new Dictionary();
 			
+			var row0:Array = sheetArray[0];
 			var row1:Array = sheetArray[1];
 			var row2:Array = sheetArray[2];
 			var totalColumns:int = row2.length;
@@ -94,9 +95,10 @@ package utils
 						secondType = "String";
 					}
 					keyVo = new KeyVo();
-					keyVo.name = row2[k];
+					keyVo.name = trim(row2[k]);
 					keyVo.isArray = isArray;
 					keyVo.secondType = secondType;
+					keyVo.desc = row0[k];
 					columnKeys[k] = keyVo;
 				}
 			}
@@ -136,7 +138,16 @@ package utils
 			sheet.contents = items;
 			return sheet;
 		}
-		
+		/**
+		 * 去掉非合法的id的字符
+		 * @param v
+		 * @return 
+		 * 
+		 */		
+		private static function trim(v:String):String
+		{
+			return v.replace(/[^a-zA-Z_]/g, "");
+		}
 		protected static function getValueByType(input:String, type:String):*
 		{
 			switch(type)
@@ -194,10 +205,11 @@ package utils
 					for each (var keyVo:KeyVo in sheet.columnKeys)
 					{
 						props[props.length] = formatString(
-							"\t\tpublic var {0}:{1};{2}",
+							"\t\t/**\r\n\t\t * {3}\r\n\t\t */\r\n\t\tpublic var {0}:{1};{2}",
 							keyVo.name, 
 							keyVo.isArray?"Array":keyVo.secondType,
-							keyVo.isArray?"// Aray of " + keyVo.secondType:""
+							keyVo.isArray?"// Aray of " + keyVo.secondType:"",
+							keyVo.desc || ""
 						);
 					}
 					classContens[classContens.length] = formatString("////////////////////////////////////////////////////////////////////////////////" +
