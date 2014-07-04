@@ -38,7 +38,30 @@ package utils
 			stream2.writeBytes(packageVo.formatBytes);
 			stream2.close();
 		}
-		
+		private static function getFileXMLArray(file:File):SheetVo
+		{
+			var fileBytes:ByteArray = new ByteArray();
+			var stream:FileStream = new FileStream();
+			stream.open(file, FileMode.READ);
+			stream.readBytes(fileBytes);
+			stream.close();
+			var xml:XML = new XML(fileBytes);
+			var items:Array = [];
+			for each(var item:XML in xml.children()) 
+			{
+				var obj:Object = {};
+				for each(var attr:XML in item.attributes() )
+				{
+					obj[attr.name().toString()] = attr.toString();
+				}
+
+				items[items.length] = obj;
+			}
+			var sheet:SheetVo = new SheetVo();
+//			sheet.columnKeys = columnKeys;
+			sheet.contents = items;
+			return sheet;
+		}
 		/**
 		 * 获取excel文件里的列表项数组
 		 * @param file
@@ -111,7 +134,7 @@ package utils
 				{
 					keyVo = columnKeys[j];
 					//去除没有key的列
-					if(keyVo)
+					if(keyVo && row.hasOwnProperty(j))
 					{
 						// 把excel里的值转化为Array、int、Number
 						var propValue:* = null;
@@ -182,6 +205,10 @@ package utils
 			var formatBytes:ByteArray = new ByteArray();
 			var header:Object = {};
 			var contentBytes:ByteArray = new ByteArray();
+			
+			var name:String;
+			var dotIndex:int;
+			var sheet:SheetVo;
 			//指定的file对象是否存在
 			var sonFileArray:Array = dirFile.getDirectoryListing();
 			for each (var file:File in sonFileArray) 
@@ -190,14 +217,14 @@ package utils
 					&& file.extension.toLowerCase() == "xlsx")
 				{
 					//只支持excel2007的文件
-					var name:String = file.name;
-					var dotIndex:int = name.lastIndexOf(".");
+					name = file.name;
+					dotIndex = name.lastIndexOf(".");
 					if(dotIndex != -1)
 					{
 						name = name.slice(0, dotIndex);
 					}
 					header[name] = contentBytes.position;
-					var sheet:SheetVo = getFileSheetArray(file);
+					sheet = getFileSheetArray(file);
 					contentBytes.writeObject(sheet.contents);
 					
 					
@@ -216,6 +243,18 @@ package utils
 						"\r\n// {0}.xlsx\r\n" +
 						"////////////////////////////////////////////////////////////////////////////////" +
 						"\r\npackage\r\n{\r\n\tpublic class {0}Vo\r\n\t{\r\n{1}\r\n\t}\r\n}", name, props.join("\r\n"));
+				}else if (file.extension
+					&& file.extension.toLowerCase() == "xml")
+				{
+					name = file.name;
+					dotIndex = name.lastIndexOf(".");
+					if(dotIndex != -1)
+					{
+						name = name.slice(0, dotIndex);
+					}
+					header[name] = contentBytes.position;
+					sheet = getFileXMLArray(file);
+					contentBytes.writeObject(sheet.contents);
 				}
 			}
 			formatBytes.writeUTFBytes(classContens.join("\r\n"));
