@@ -130,12 +130,17 @@ package utils
 			{
 				var row:Array = sheetArray[i];
 				var rowObject:Object = {};
+				var validRow:Boolean = false;// 是否合法（是否全为空）
 				for (var j:int = 0; j < totalColumns; j++)
 				{
 					keyVo = columnKeys[j];
 					//去除没有key的列
 					if(keyVo && row.hasOwnProperty(j))
 					{
+						if(!validRow && row[j] != null)
+						{
+							validRow = true;
+						}
 						// 把excel里的值转化为Array、int、Number
 						var propValue:* = null;
 						var valueStr:String = row[j] || "";
@@ -154,7 +159,13 @@ package utils
 						rowObject[keyVo.name] = propValue;
 					}
 				}
-				items[items.length] = rowObject;
+				if(validRow)
+				{
+					items[items.length] = rowObject;
+				}else
+				{
+					trace();
+				}
 			}
 			var sheet:SheetVo = new SheetVo();
 			sheet.columnKeys = columnKeys;
@@ -169,7 +180,7 @@ package utils
 		 */		
 		private static function trim(v:String):String
 		{
-			return v.replace(/[^a-zA-Z_]/g, "");
+			return v.replace(/[^a-zA-Z_0-9]/g, "");
 		}
 		protected static function getValueByType(input:String, type:String):*
 		{
@@ -210,8 +221,8 @@ package utils
 			var dotIndex:int;
 			var sheet:SheetVo;
 			//指定的file对象是否存在
-			var sonFileArray:Array = dirFile.getDirectoryListing();
-			for each (var file:File in sonFileArray) 
+			eachFile(dirFile, 
+				function(file:File):void
 			{
 				if (file.extension
 					&& file.extension.toLowerCase() == "xlsx")
@@ -224,7 +235,13 @@ package utils
 						name = name.slice(0, dotIndex);
 					}
 					header[name] = contentBytes.position;
-					sheet = getFileSheetArray(file);
+					try{
+						sheet = getFileSheetArray(file);
+					}catch(e:*)
+					{
+						// 空文件
+						return;
+					}
 					contentBytes.writeObject(sheet.contents);
 					
 					
@@ -256,7 +273,8 @@ package utils
 					sheet = getFileXMLArray(file);
 					contentBytes.writeObject(sheet.contents);
 				}
-			}
+			});
+			
 			formatBytes.writeUTFBytes(classContens.join("\r\n"));
 			
 			var resultBytes:ByteArray = new ByteArray();
@@ -270,6 +288,20 @@ package utils
 			return packageVo;
 		}
 		
+		
+		private static function eachFile(dirFile:File, fun:Function):void
+		{
+			for each (var file:File in dirFile.getDirectoryListing()) 
+			{
+				if(file.isDirectory)
+				{
+					eachFile(file, fun);
+				}else
+				{
+					fun(file);
+				}
+			}
+		}
 		/**
 		 * 判断是不是unicode 编码一直是个麻烦的问题
 		 */
